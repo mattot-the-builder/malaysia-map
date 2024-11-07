@@ -1,6 +1,13 @@
 import './App.css'
+import svgData from "./assets/MalaysiaMapSvgData.json";
+
+import MalaysiaMap from './libs/MalaysiaMap';
+
+const malaysiaMap = new MalaysiaMap("canvas");
 
 function App() {
+
+  console.log(svgData);
 
   return (
     <>
