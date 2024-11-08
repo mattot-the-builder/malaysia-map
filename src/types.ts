@@ -1,4 +1,5 @@
 export type State2DPath = {
-    stateName: string;
-    pathData: Path2D;
-}
+  stateName: string;
+  description: string;
+  pathData: Path2D;
+};
