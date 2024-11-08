@@ -39,10 +39,10 @@ export default class MalaysiaMap {
     this.ctx!.canvas.width = this.canvas.width;
     this.ctx!.canvas.height = this.canvas.height;
 
-    const scaleX = (window.innerWidth / this.canvas.width);
-    const scaleY = (window.innerHeight / this.canvas.height);
+    const scaleX = window.innerWidth / this.canvas.width;
+    const scaleY = window.innerHeight / this.canvas.height;
 
-    const scaleToFit = Math.min(scaleX * 0.5, scaleY * 0.5);
+    const scaleToFit = Math.min(scaleX / 2, scaleY / 2);
     // const scaleToCover = Math.max(scaleX, scaleY);
 
     this.canvas.style.transformOrigin = "0 0"; //scale from top left
@@ -167,22 +167,9 @@ export default class MalaysiaMap {
     });
   }
 
-  private renderStateInfoCard(x: number, y: number) {
-    const stateImage = new Image();
-    const imageDimension = {
-      width: 100,
-      height: 100,
-    };
-
-    stateImage.src = "https://picsum.photos/100";
-
-    if (this.currentActiveState) {
-      stateImage.addEventListener("load", () => {
-        this.ctx!.drawImage(stateImage, x, y);
-      });
-    }
-
-    const svg = this.generateSvgCardTemplate();
+  private async renderStateInfoCard(x: number, y: number) {
+    const svg = await this.generateSvgCardTemplate();
+    console.log("svg card template : ", svg);
 
     const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
     const svgObjectUrl = URL.createObjectURL(svgBlob);
@@ -192,26 +179,67 @@ export default class MalaysiaMap {
     tempImage.src = svgObjectUrl;
 
     tempImage.addEventListener("load", () => {
-      this.ctx!.drawImage(tempImage, x, y + imageDimension.height);
+      this.ctx!.drawImage(tempImage, x, y);
       URL.revokeObjectURL(svgObjectUrl);
     });
   }
 
   private generateSvgCardTemplate() {
-    if (!this.currentActiveState) {
-      return "";
-    }
+    return new Promise<string>((resolve, reject) => {
+      if (this.currentActiveState) {
+        const stateImage = new Image();
+        stateImage.src = "https://picsum.photos/200/100";
 
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${this.canvas.width}" height="${this.canvas.height}">
-        <foreignObject width="100%" height="100%">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="max-width: 200px">
-              <h4>${this.currentActiveState.stateName}</h4>
-              <p>${this.currentActiveState.description}</p>
-            </div>
-        </foreignObject>
-      </svg>
-    `;
+        stateImage.onload = () => {
+          console.log("state image loaded");
+
+          const svgMarkup = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="${this.canvas.width}" height="${this.canvas.height}">
+              <foreignObject width="100%" height="100%">
+                <style>
+                .card {
+                  width: 160px;
+                  overflow: hidden;
+                  font-family: poppins;
+                  font-size: 12px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 0;
+                  background-color: #27272A;
+                  color: white;
+                  padding: 4px;
+                  border-radius: 8px;
+
+                  h4, p {
+                    margin: 0;
+                  }
+
+                  p {
+                    line-height: 1.5;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 8;
+                    -webkit-box-orient: vertical;
+                  }
+                }
+                </style>
+                <div xmlns="http://www.w3.org/1999/xhtml" class="card">
+                  <image href="${stateImage.src}"/>
+                  <h4>${camelToTitleCase(this.currentActiveState!.stateName).toUpperCase()}</h4>
+                  <p>${this.currentActiveState!.description}</p>
+                </div>
+              </foreignObject>
+            </svg>
+          `;
+          resolve(svgMarkup);
+        };
+
+        stateImage.onerror = (err) => {
+          reject(err);
+        };
+      } else {
+        resolve("");
+      }
+    });
   }
 
   private draw() {
